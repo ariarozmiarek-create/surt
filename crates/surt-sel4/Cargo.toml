@@ -1,0 +1,19 @@
+[package]
+name = "surt-sel4"
+description = "seL4 binding for SURT: notification-backed wakeup + a coalesced blocking drain over the platform-agnostic ring core."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[dependencies]
+surt-core = { path = "../surt-core", version = "0.1.0" }
+
+[lints.clippy]
+undocumented_unsafe_blocks = "deny"

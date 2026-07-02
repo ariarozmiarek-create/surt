@@ -1,0 +1,28 @@
+[package]
+name = "surt-core"
+description = "Host-testable SPSC ring transport core for SURT (no_std, no hot-path allocation)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[features]
+default = []
+# Pull in `std` (host runtime helpers, benchmarks). The ring itself never
+# needs it; tests provide their own backing memory.
+std = []
+# Pull in `alloc` for optional owned-buffer conveniences (not used on the hot path).
+alloc = []
+
+[dependencies]
+surt-abi = { path = "../surt-abi", version = "0.1.0" }
+
+[lints.clippy]
+# Enforce the spec's "every unsafe block has a SAFETY: comment" gate (§23).
+undocumented_unsafe_blocks = "deny"

@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/surt-abi", "crates/surt-core", "crates/surt-sel4", "tools/surt-bench"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.77"
+repository = "https://github.com/stakach/surt"
+homepage = "https://github.com/stakach/surt"
+authors = ["Stephen von Takach <steve@place.technology>"]
+keywords = ["sel4", "ipc", "ring-buffer", "io_uring", "shared-memory"]
+categories = ["no-std", "os", "concurrency"]
+
+[profile.release]
+# Ring transport is a hot path; favour predictable codegen.
+opt-level = 3
+overflow-checks = true

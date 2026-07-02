@@ -1,0 +1,23 @@
+[package]
+name = "surt-abi"
+description = "Stable shared-memory ABI definitions for the seL4 user-space ring transport (SURT)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+# Invariants (do not add dependencies here):
+#   * no_std (in production builds)
+#   * no allocation
+#   * no seL4 dependency
+#   * no domain-specific dependency
+[dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"
