@@ -1,7 +1,9 @@
 [package]
 name = "surt-sel4"
-description = "seL4 binding for SURT: notification-backed wakeup + a coalesced blocking drain over the platform-agnostic ring core."
-version.workspace = true
+description = "seL4 binding for SURT: notification-backed wakeup + blocking / polling / adaptive drain loops over the platform-agnostic ring core."
+# Independent of the workspace version: this crate gains drain_polling +
+# drain_adaptive in 0.1.1 while surt-abi/surt-core stay at 0.1.0.
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true

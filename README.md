@@ -45,9 +45,12 @@ tools/
   memory and knows nothing about seL4, so the exact code that runs between two
   seL4 components is exercised on the host by ordinary threads (`cargo test`).
 - **`surt-sel4` is the thin glue** — it defines [`Sel4Env`], the two-syscall
-  platform contract (`seL4_Signal` / `seL4_Wait`), a `Notify` adapter, and a
-  ready-made coalesced `drain_blocking` consumer loop. You implement `Sel4Env`
-  once for your platform.
+  platform contract (`seL4_Signal` / `seL4_Wait`), a `Notify` adapter, and three
+  ready-made consumer loops: `drain_blocking` (block when idle), `drain_polling`
+  (pure busy-poll — zero syscalls in steady state, the SQPOLL equivalent; run it
+  on a dedicated core), and `drain_adaptive` (poll a budget, then block — the
+  SQPOLL idle-timeout, safe on a shared core). You implement `Sel4Env` once for
+  your platform.
 
 ## Using it on seL4
 

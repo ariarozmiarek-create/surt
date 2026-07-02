@@ -151,3 +151,85 @@ where
         }
     }
 }
+
+/// Consumer-side **busy-poll** drain: pop entries and hand each to `handler`,
+/// spinning on an empty ring and **never blocking** — so in steady state the
+/// data path issues *zero syscalls* on this side (the SURT equivalent of
+/// io_uring's SQPOLL). It needs no [`Sel4Env`]: it never waits. Pair it with a
+/// producer whose coalesced `notify_consumer` becomes a no-op because this side
+/// never arms — giving a fully syscall-free channel.
+///
+/// Returns [`DrainExit::Stopped`] when `handler` returns `false`, or
+/// [`DrainExit::PeerFaulted`] if the peer corrupts the ring.
+///
+/// **Deploy on a dedicated core.** A spinning poller starves any peer sharing
+/// its core; on a single core use [`drain_adaptive`] or [`drain_blocking`].
+pub fn drain_polling<E, H>(consumer: &mut Consumer<E>, mut handler: H) -> DrainExit
+where
+    E: RingEntry,
+    H: FnMut(&E) -> bool,
+{
+    loop {
+        match consumer.try_pop() {
+            Ok(Some(entry)) => {
+                if !handler(&entry) {
+                    return DrainExit::Stopped;
+                }
+            }
+            Ok(None) => core::hint::spin_loop(),
+            Err(_) => return DrainExit::PeerFaulted,
+        }
+    }
+}
+
+/// Consumer-side **adaptive** drain: busy-poll while work is flowing, then fall
+/// back to a coalesced block once the ring has been empty for `spin_budget`
+/// consecutive polls (io_uring's SQPOLL idle-timeout, under your control).
+/// Spends *zero syscalls while busy* and only one `wait` after a quiet spell;
+/// the producer's `notify_consumer` wakes it via the lost-wakeup-free protocol.
+///
+/// `spin_budget == 0` is equivalent to [`drain_blocking`] (block immediately on
+/// empty). A large budget approaches [`drain_polling`] but still yields the CPU
+/// (one `wait`) if the ring ever stays empty past the budget — safe to run on a
+/// shared core, unlike [`drain_polling`].
+///
+/// Returns [`DrainExit::Stopped`] when `handler` returns `false`, or
+/// [`DrainExit::PeerFaulted`] if the peer corrupts the ring.
+pub fn drain_adaptive<E, Env, H>(
+    consumer: &mut Consumer<E>,
+    wake: &Sel4Notify<Env>,
+    spin_budget: u32,
+    mut handler: H,
+) -> DrainExit
+where
+    E: RingEntry,
+    Env: Sel4Env,
+    H: FnMut(&E) -> bool,
+{
+    let mut idle: u32 = 0;
+    loop {
+        match consumer.try_pop() {
+            Ok(Some(entry)) => {
+                idle = 0;
+                if !handler(&entry) {
+                    return DrainExit::Stopped;
+                }
+            }
+            Ok(None) => {
+                if idle < spin_budget {
+                    idle += 1;
+                    core::hint::spin_loop();
+                } else {
+                    // Quiet long enough: arm + block (coalesced, lost-wakeup-free).
+                    match consumer.prepare_wait() {
+                        Ok(WaitDecision::Block) => wake.wait(),
+                        Ok(WaitDecision::Ready) => {}
+                        Err(_) => return DrainExit::PeerFaulted,
+                    }
+                    idle = 0;
+                }
+            }
+            Err(_) => return DrainExit::PeerFaulted,
+        }
+    }
+}
