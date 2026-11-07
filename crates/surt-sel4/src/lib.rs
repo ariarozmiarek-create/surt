@@ -20,10 +20,10 @@
 //! - **any other seL4-compatible kernel** — implement it with that kernel's ABI.
 //!
 //! The **control path** (retyping/sharing frames, transferring the frame and
-//! notification caps) is intentionally *not* abstracted here. The HELLO /
-//! HELLO_ACK codec lives in `surt_abi::hello` (pure, no seL4 calls); the
-//! cap-transfer sequence that follows it is issued by the application at setup.
-
+//! notification caps, the HELLO/HELLO_ACK handshake) is intentionally *not*
+//! abstracted here — it is a handful of ordinary seL4 invocations the
+//! application issues once at setup, and it varies more between platforms than
+//! the fast path. See `docs/architecture/surt_sel4_binding.md` for the full
 //! design, and the rust-micro rootserver's `surt_ring_cap_transfer` microtest
 //! for a complete working reference (two isolated components, own CSpaces,
 //! frame + notification caps transferred over IPC).
